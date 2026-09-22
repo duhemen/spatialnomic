@@ -1,0 +1,1 @@
+"""SpatiaNomics PyQt6 Client."""

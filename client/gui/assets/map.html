@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>SpatiaNomics Map</title>
+<link rel="stylesheet" href="leaflet/leaflet.css" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #0A0E17; font-family: 'Segoe UI', sans-serif; }
+  #map { height: 100%; width: 100%; background: #0A0E17; }
+  .leaflet-container { background: #0A0E17 !important; }
+  .leaflet-popup-content-wrapper {
+    background: #141B2D; color: #E0E0E0; border: 1px solid #00E5FF;
+    border-radius: 8px; box-shadow: 0 0 20px rgba(0,229,255,0.3);
+  }
+  .leaflet-popup-tip { background: #141B2D; border: 1px solid #00E5FF; }
+  .leaflet-popup-content { margin: 12px 16px; font-size: 13px; }
+  .popup-title { color: #00E5FF; font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .popup-row { display: flex; justify-content: space-between; padding: 2px 0; }
+  .popup-key { color: #8A94A6; }
+  .popup-val { color: #E0E0E0; font-weight: 600; }
+  .leaflet-control-zoom a {
+    background: #141B2D !important; color: #00E5FF !important;
+    border: 1px solid #1E2A44 !important;
+  }
+  .leaflet-control-zoom a:hover { background: #1E2A44 !important; }
+  .legend {
+    background: rgba(10,14,23,0.9); padding: 10px 14px; border-radius: 8px;
+    border: 1px solid #1E2A44; color: #E0E0E0; font-size: 11px;
+  }
+  .legend-item { display: flex; align-items: center; margin: 3px 0; }
+  .legend-box { width: 14px; height: 14px; margin-right: 8px; border-radius: 3px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+  #loading-overlay {
+    position: fixed; inset: 0; background: #0A0E17;
+    display: flex; align-items: center; justify-content: center;
+    color: #00E5FF; font-size: 14px; z-index: 9999;
+  }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid #1E2A44;
+    border-top-color: #00E5FF; border-radius: 50%;
+    animation: spin 1s linear infinite; margin-right: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="loading-overlay"><div class="spinner"></div> Memuat peta...</div>
+<div id="map"></div>
+<script src="leaflet/leaflet.js"></script>
+<script>
+  window.__mapReady = false;
+  window.__pendingGeoData = null;
+
+  const CATEGORY_COLORS = {
+    "AMAN":    "#4ADE80",
+    "WASPADA": "#FACC15",
+    "SIAGA":   "#FF6E40",
+    "BAHAYA":  "#EF4444",
+    "UNKNOWN": "#8A94A6"
+  };
+
+  let map = null;
+  let geoLayer = null;
+
+  function initMap() {
+    if (typeof L === 'undefined') {
+      document.getElementById('loading-overlay').innerHTML =
+        '<div style="color:#EF4444;padding:20px;">❌ Leaflet tidak terdeteksi.</div>';
+      return false;
+    }
+
+    map = L.map('map', {
+      center: [-2.5, 118], zoom: 5,
+      zoomControl: true, attributionControl: false, preferCanvas: true,
+    });
+
+    L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
+      attribution: 'Esri, HERE, Garmin, © OpenStreetMap contributors'
+    }).addTo(map);
+
+    const legend = L.control({ position: 'bottomright' });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'legend');
+      div.innerHTML = '<div style="font-weight:700;color:#00E5FF;margin-bottom:6px;">UERI</div>' +
+        Object.entries(CATEGORY_COLORS).filter(([k]) => k !== 'UNKNOWN').map(([k, v]) =>
+          `<div class="legend-item"><div class="legend-box" style="background:${v}"></div>${k}</div>`
+        ).join('');
+      return div;
+    };
+    legend.addTo(map);
+
+    window.__mapReady = true;
+    document.getElementById('loading-overlay').style.display = 'none';
+    console.log('✅ SpatiaNomics Map ready.');
+
+    if (window.__pendingGeoData) {
+      setRegionData(window.__pendingGeoData);
+      window.__pendingGeoData = null;
+    }
+    return true;
+  }
+
+  window.setRegionData = function (payload) {
+    if (!window.__mapReady || !map) {
+      window.__pendingGeoData = payload;
+      console.log('⏳ Map belum siap, data disimpan.');
+      return;
+    }
+    if (geoLayer) map.removeLayer(geoLayer);
+
+    geoLayer = L.geoJSON(payload, {
+      // ⭐ Sanitizer ekstra di client
+      filter: function (feature) {
+        if (!feature || !feature.geometry) return false;
+        const g = feature.geometry;
+        if (!g.coordinates) return false;
+        try {
+          // Cek tidak ada null/undefined di JSON string
+          const str = JSON.stringify(g.coordinates);
+          if (str.includes('null') || str.includes('undefined')) {
+            console.warn('Skip feature dengan null:', feature.properties?.kode);
+            return false;
+          }
+        } catch (e) { return false; }
+        return true;
+      },
+      style: f => {
+        const p = f.properties || {};
+        const cat = (p.category || 'UNKNOWN').toUpperCase();
+        return {
+          color: '#1E2A44',
+          weight: 0.8,
+          opacity: 0.9,
+          fillColor: CATEGORY_COLORS[cat] || CATEGORY_COLORS.UNKNOWN,
+          fillOpacity: 0.65,
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        if (!feature || !feature.properties) return;
+        const p = feature.properties;
+
+        const ueri = (p.ueri !== undefined && p.ueri !== null) ? Number(p.ueri).toFixed(3) : '—';
+        const cat = (p.category || 'UNKNOWN').toUpperCase();
+        const color = CATEGORY_COLORS[cat] || CATEGORY_COLORS.UNKNOWN;
+        const pendudukTxt = (p.penduduk && p.penduduk > 0)
+          ? Number(p.penduduk).toLocaleString('id-ID') : null;
+        const luasTxt = (p.luas_km2 && p.luas_km2 > 0)
+          ? Number(p.luas_km2).toLocaleString('id-ID') + ' km²' : null;
+
+        const html = `
+          <div style="min-width:220px;">
+            <div class="popup-title">${p.nama || 'Wilayah'}</div>
+            <div class="popup-row"><span class="popup-key">Kode</span><span class="popup-val">${p.kode || '-'}</span></div>
+            <div class="popup-row"><span class="popup-key">Level</span><span class="popup-val">${p.level || '-'}</span></div>
+            ${p.ibukota ? `<div class="popup-row"><span class="popup-key">Ibukota</span><span class="popup-val">${p.ibukota}</span></div>` : ''}
+            ${pendudukTxt ? `<div class="popup-row"><span class="popup-key">Penduduk</span><span class="popup-val">${pendudukTxt}</span></div>` : ''}
+            ${luasTxt ? `<div class="popup-row"><span class="popup-key">Luas</span><span class="popup-val">${luasTxt}</span></div>` : ''}
+            <hr style="border:none;border-top:1px solid #1E2A44;margin:8px 0;">
+            <div class="popup-row">
+              <span class="popup-key">UERI</span>
+              <span class="popup-val" style="color:${color};font-size:16px;">${ueri}</span>
+            </div>
+            <div class="popup-row">
+              <span class="popup-key">Kategori</span>
+              <span class="badge" style="background:${color};color:#0A0E17">${cat}</span>
+            </div>
+          </div>
+        `;
+
+        try {
+          layer.bindPopup(html, { maxWidth: 300 });
+          layer.on('mouseover', () => layer.setStyle({ weight: 2, color: '#00E5FF', fillOpacity: 0.85 }));
+          layer.on('mouseout', () => layer.setStyle({ weight: 0.8, color: '#1E2A44', fillOpacity: 0.65 }));
+          layer.on('click', () => {
+            if (window.pyqtChannel && window.pyqtChannel.regionClicked) {
+              window.pyqtChannel.regionClicked(JSON.stringify({
+                kode: p.kode, nama: p.nama, ueri: p.ueri, category: p.category
+              }));
+            }
+          });
+        } catch (e) {
+          console.warn('bindPopup gagal:', p.kode, e);
+        }
+      }
+    }).addTo(map);
+
+    try {
+      const bounds = geoLayer.getBounds();
+      if (bounds.isValid()) map.fitBounds(bounds, { padding: [20, 20] });
+    } catch (e) {}
+  };
+
+  window.setCategory = function (kode, category, ueri) {
+    if (!geoLayer) return;
+    const color = CATEGORY_COLORS[(category || 'UNKNOWN').toUpperCase()] || CATEGORY_COLORS.UNKNOWN;
+    geoLayer.eachLayer(l => {
+      const p = l.feature?.properties || {};
+      if ((p.kode || p.id) === kode) l.setStyle({ fillColor: color, fillOpacity: 0.75 });
+    });
+  };
+
+  window.resetView = function () { if (map) map.setView([-2.5, 118], 5); };
+  window.flyTo = function (lat, lng, zoom) { if (map) map.flyTo([lat, lng], zoom || 10); };
+
+  window.addEventListener('load', () => {
+    if (!initMap()) {
+      let retries = 20;
+      const tryInit = () => {
+        if (initMap() || retries-- <= 0) return;
+        setTimeout(tryInit, 300);
+      };
+      setTimeout(tryInit, 300);
+    }
+  });
+</script>
+</body>
+</html>

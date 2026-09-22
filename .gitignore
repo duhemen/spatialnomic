@@ -1,0 +1,114 @@
+# ============================================================
+# SpatiaNomics — .gitignore
+# ============================================================
+
+# ============ Python ============
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+.conda/
+.python-version
+
+# ============ Anaconda / Conda ============
+*.conda
+.conda-env/
+conda-meta/
+
+# ============ IDE ============
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# ============ Jupyter ============
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ============ OS Files ============
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# ============ Logs ============
+logs/
+*.log
+*.log.*
+
+# ============ Environment / Secrets ============
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# ============ Data (BESAR!) ============
+# Database SQLite — jangan di-push karena bisa >500 MB
+*.db
+*.sqlite
+*.sqlite3
+
+# Data mentah dari cahyadsn (para user download sendiri)
+data/raw/prov/
+data/raw/kab/
+data/raw/kec/
+data/raw/kel/
+data/raw/*.sql
+data/raw/boundaries_master.sql
+data/raw/*.geojson
+
+# Cache lokal client
+data/client_cache.db
+
+# Progress import
+data/raw/.import_progress.json
+
+# Dataset besar — git LFS atau skip
+data/processed/
+data/exports/
+
+# ============ Cache ============
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ============ Qt / PyQt ============
+*.pyc
+.qmake.stash
+
+# ============ Build output ============
+*.spec
+build/
+dist/

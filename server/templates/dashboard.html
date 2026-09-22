@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% set active = 'dashboard' %}
+{% block title %}Dashboard — SpatiaNomics{% endblock %}
+
+{% block content %}
+
+<section class="page-header">
+  <h1>🏙️ Dashboard Nasional</h1>
+  <p class="subtitle">Ringkasan Urban-Economic Risk Index (UERI) untuk seluruh Indonesia.</p>
+</section>
+
+<section class="grid grid-4">
+  <div class="kpi-card">
+    <div class="kpi-title">UERI NASIONAL</div>
+    <div class="kpi-value" id="kpi-ueri">—</div>
+    <div class="kpi-unit">rata-rata 38 provinsi</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">KATEGORI</div>
+    <div class="kpi-value" id="kpi-cat">—</div>
+    <div class="kpi-unit" id="kpi-cat-sub">—</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">WILAYAH DIPANTAU</div>
+    <div class="kpi-value" id="kpi-regions">—</div>
+    <div class="kpi-unit">provinsi & kabupaten</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-title">LAPORAN LAPANGAN</div>
+    <div class="kpi-value" id="kpi-reports">—</div>
+    <div class="kpi-unit">verified</div>
+  </div>
+</section>
+
+<section class="grid grid-2">
+  <!-- Distribusi UERI -->
+  <div class="card">
+    <h2>📊 Distribusi Kategori UERI</h2>
+    <div class="chart-wrapper">
+      <canvas id="chart-distribution"></canvas>
+    </div>
+  </div>
+
+  <!-- Top 10 Risiko -->
+  <div class="card">
+    <h2>🔥 Top 10 Wilayah Risiko Tertinggi</h2>
+    <div id="top-risk-list" class="list-container">
+      <div class="loading">Memuat data...</div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>🗺️ Sekilas Peta Indonesia</h2>
+  <div id="mini-map" style="height: 420px; border-radius: 8px; overflow: hidden;"></div>
+  <div style="text-align: center; margin-top: 12px;">
+    <a href="/peta" class="btn btn-primary">🗺️ Buka Peta Interaktif Lengkap</a>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/charts.js"></script>
+<script src="/static/js/map.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    loadDashboardKPI();
+    loadDistributionChart();
+    loadTopRisk();
+    initMiniMap('mini-map');
+  });
+</script>
+{% endblock %}

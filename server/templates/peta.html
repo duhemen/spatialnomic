@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% set active = 'peta' %}
+{% block title %}Peta — SpatiaNomics{% endblock %}
+
+{% block extra_head %}
+<style>
+  .hierarchy-bar {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 14px 18px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .hierarchy-bar select {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    min-width: 180px;
+    cursor: pointer;
+  }
+  .hierarchy-bar select:disabled { opacity: 0.5; cursor: not-allowed; }
+  .hierarchy-bar select:focus { outline: none; border-color: var(--cyan); }
+  .hierarchy-bar .arrow { color: var(--text-muted); font-weight: 700; }
+  .map-wrapper { display: grid; grid-template-columns: 320px 1fr; gap: 16px; height: calc(100vh - 320px); }
+  .map-sidebar { overflow-y: auto; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  #full-map { height: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  @media (max-width: 900px) { .map-wrapper { grid-template-columns: 1fr; } .map-sidebar { max-height: 280px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="page-header">
+  <h1>🗺️ Peta Drill-Down Spasial</h1>
+  <p class="subtitle">Pilih level di dropdown, atau klik wilayah pada peta untuk menelusuri sampai desa.</p>
+</section>
+
+<!-- ⭐ Dropdown Hierarchy -->
+<div class="hierarchy-bar">
+  <span style="color:var(--cyan);font-weight:700;">🌏 Region:</span>
+  <select id="select-region"><option value="">— Pilih Region —</option></select>
+  <span class="arrow">›</span>
+
+  <span style="color:var(--cyan);font-weight:700;">🏝️ Provinsi:</span>
+  <select id="select-provinsi" disabled><option value="">— Pilih Provinsi —</option></select>
+  <span class="arrow">›</span>
+
+  <span style="color:var(--cyan);font-weight:700;">🏙️ Kabupaten:</span>
+  <select id="select-kabupaten" disabled><option value="">— Pilih Kabupaten —</option></select>
+  <span class="arrow">›</span>
+
+  <span style="color:var(--cyan);font-weight:700;">🏘️ Kecamatan:</span>
+  <select id="select-kecamatan" disabled><option value="">— Pilih Kecamatan —</option></select>
+</div>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb" id="breadcrumb">
+  <span class="crumb active">🌏 Indonesia</span>
+</div>
+
+<div class="map-wrapper">
+  <aside class="map-sidebar">
+    <h3 id="sidebar-title" style="color:var(--cyan);margin-top:0;">🌏 Region Indonesia</h3>
+    <ul class="region-list" id="region-list">
+      <li class="loading">Memuat region...</li>
+    </ul>
+  </aside>
+  <div id="full-map"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/map.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    initDrillDownMap('full-map');
+  });
+</script>
+{% endblock %}

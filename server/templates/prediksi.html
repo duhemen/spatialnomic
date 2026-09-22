@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% set active = 'prediksi' %}
+{% block title %}Prediksi — SpatiaNomics{% endblock %}
+
+{% block content %}
+
+<section class="page-header">
+  <h1>📈 Prediksi UERI & Confidence Interval</h1>
+  <p class="subtitle">Ensemble ARIMA + Moving Average, proyeksi 7–30 hari ke depan.</p>
+</section>
+
+<section class="card">
+  <div class="toolbar">
+    <label>🌏 Region:</label>
+    <select id="pred-region" class="input" style="min-width:180px;">
+      <option value="">— Pilih Region —</option>
+    </select>
+
+    <label>📍 Wilayah:</label>
+    <select id="pred-wilayah" class="input" style="min-width:240px;">
+      <option value="">— Pilih Wilayah —</option>
+    </select>
+
+    <label>Horizon (hari):</label>
+    <input type="number" id="input-horizon" value="14" min="3" max="60" class="input" style="width:80px;" />
+
+    <button id="btn-sample" class="btn" type="button">🎲 Sample Series</button>
+    <button id="btn-run" class="btn btn-primary" type="button">🔮 Jalankan Prediksi</button>
+  </div>
+
+  <div style="height: 420px; margin-top: 16px;">
+    <canvas id="chart-forecast"></canvas>
+  </div>
+  <div id="forecast-info" style="margin-top: 12px; color:var(--text-muted); font-size:12px;"></div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/charts.js"></script>
+<script>
+  // ============ Dropdown loader ============
+  async function loadPrediksiDropdowns() {
+    try {
+      const regions = await api('/api/wilayah/regions');
+      const sel = document.getElementById('pred-region');
+      regions.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.key;
+        opt.textContent = `${r.icon} ${r.nama}`;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', onPredRegionChange);
+    } catch (e) {
+      console.error('loadPrediksiDropdowns:', e);
+    }
+  }
+
+  async function onPredRegionChange(e) {
+    const region = e.target.value;
+    const wilayahSel = document.getElementById('pred-wilayah');
+    wilayahSel.innerHTML = '<option value="">— Pilih Wilayah —</option>';
+    if (!region) return;
+    try {
+      const gj = await api(`/api/wilayah/region-geojson/${region}`);
+      gj.features.forEach(f => {
+        const p = f.properties;
+        const opt = document.createElement('option');
+        opt.value = p.kode;
+        opt.textContent = `${p.nama} — UERI ${Number(p.ueri).toFixed(3)}`;
+        wilayahSel.appendChild(opt);
+      });
+    } catch (err) { console.error(err); }
+  }
+
+  // ============ Wire buttons ============
+  document.addEventListener('DOMContentLoaded', () => {
+    loadPrediksiDropdowns();
+
+    // Tombol Sample
+    document.getElementById('btn-sample').addEventListener('click', function () {
+      generateSample();
+    });
+
+    // Tombol Run
+    document.getElementById('btn-run').addEventListener('click', function () {
+      runForecast(this);
+    });
+
+    // Auto-generate sample saat pertama kali buka
+    setTimeout(generateSample, 500);
+  });
+</script>
+{% endblock %}

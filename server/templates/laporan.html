@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% set active = 'laporan' %}
+{% block title %}Laporan — SpatiaNomics{% endblock %}
+
+{% block content %}
+
+<section class="page-header">
+  <h1>📋 Laporan Lapangan</h1>
+  <p class="subtitle">Semua field observation dari petugas lapangan yang sudah diverifikasi.</p>
+</section>
+
+<section class="card">
+  <div class="toolbar">
+    <label>Filter Level:</label>
+    <select id="filter-level" class="input">
+      <option value="">Semua</option>
+      <option value="provinsi">Provinsi</option>
+      <option value="kabupaten">Kabupaten</option>
+      <option value="kecamatan">Kecamatan</option>
+      <option value="desa">Desa</option>
+    </select>
+    <button class="btn" onclick="loadReports()">🔄 Refresh</button>
+  </div>
+  <div class="table-wrapper">
+    <table class="data-table" id="table-reports">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Wilayah</th>
+          <th>Variabel</th>
+          <th>Nilai</th>
+          <th>Observer</th>
+          <th>Waktu</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-reports">
+        <tr><td colspan="7" class="loading">Memuat data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => { loadReports(); });
+  document.getElementById('filter-level')?.addEventListener('change', loadReports);
+</script>
+{% endblock %}
